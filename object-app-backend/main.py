@@ -38,17 +38,30 @@ except Exception as e:
     touch_model = None
 
 # Object introductions - enhanced like in your original code
+# introductions = {
+#     "cube": "You are holding a  cube. It feels the same on all sides. It has six flat square faces, twelve straight edges, and eight corners called vertices. All sides are equal in size.",
+#     "cuboid": "You are holding a cuboid. It feels like a box. It has six flat faces, shaped like rectangles, twelve straight edges, and eight vertices. Some sides are longer than others.",
+#     "cone": "You are holding a cone. Feel the round base at the bottom and a smooth curved surface going up to a single sharp point called the apex. It has one edge and one vertex.",
+#     "tetrahedrone": "You are holding a tetrahedron. It feels like a pyramid with a triangle base. It has four triangular faces, six straight edges, and four vertices.",
+#     "cylinder": "You are holding a cylinder. It has a round base and a round top, connected by a smooth curved surface. You will not feel any corners or vertices.",
+#     "prism": "You are holding a triangular prism. It has two triangle-shaped ends and three rectangle-shaped sides. It has nine edges and six vertices."
+# }
+
 introductions = {
-    "cube": "You are holding a  cube. It feels the same on all sides. It has six flat square faces, twelve straight edges, and eight corners called vertices. All sides are equal in size.",
-    "cuboid": "You are holding a cuboid. It feels like a box. It has six flat faces, shaped like rectangles, twelve straight edges, and eight vertices. Some sides are longer than others.",
-    "cone": "You are holding a cone. Feel the round base at the bottom and a smooth curved surface going up to a single sharp point called the apex. It has one edge and one vertex.",
-    "tetrahedrone": "You are holding a tetrahedron. It feels like a pyramid with a triangle base. It has four triangular faces, six straight edges, and four vertices.",
-    "cylinder": "You are holding a cylinder. It has a round base and a round top, connected by a smooth curved surface. You will not feel any corners or vertices.",
-    "prism": "You are holding a triangular prism. It has two triangle-shaped ends and three rectangle-shaped sides. It has nine edges and six vertices."
+    "cube": " It feels the same on all sides. It has six flat square faces, twelve straight edges, and eight corners called vertices. All sides are equal in size.",
+    "cuboid": "It feels like a box. It has six flat faces, shaped like rectangles, twelve straight edges, and eight vertices. Some sides are longer than others.",
+    "cone": "Feel the round base at the bottom and a smooth curved surface going up to a single sharp point called the apex. It has one edge and one vertex.",
+    "tetrahedrone": "It feels like a pyramid with a triangle base. It has four triangular faces, six straight edges, and four vertices.",
+    "cylinder": " It has a round base and a round top, connected by a smooth curved surface. You will not feel any corners or vertices.",
+    "prism": "It has two triangle-shaped ends and three rectangle-shaped sides. It has nine edges and six vertices."
 }
+
 
 # Session storage for rotation-based detection
 rotation_sessions = {}
+
+# Feature detection state
+is_processing_feature = False
 
 class RotationSession(BaseModel):
     session_id: str
@@ -74,14 +87,14 @@ def speak_as_base64(text: str) -> str:
 async def root():
     return {"message": "3D Object Teaching API is running!"}
 
-@app.get("/initial-instruction")
-async def get_initial_instruction():
-    """Get initial instruction audio for when app loads"""
-    audio = speak_as_base64("Press F to start object detection")
-    return JSONResponse({
-        "message": "Press F to start object detection",
-        "audio": audio
-    })
+# @app.get("/initial-instruction")
+# async def get_initial_instruction():
+#     """Get initial instruction audio for when app loads"""
+#     audio = speak_as_base64("Press F to start object detection")
+#     return JSONResponse({
+#         "message": "Press F to start object detection",
+#         "audio": audio
+#     })
 
 @app.post("/start-rotation-detection/")
 async def start_rotation_detection(session_data: dict):
@@ -94,7 +107,7 @@ async def start_rotation_detection(session_data: dict):
         "detection_threshold": 101
     }
     
-    audio = speak_as_base64("Please please hold and slowly rotate the object for analysis.")
+    audio = speak_as_base64(" please hold and slowly rotate the object for analysis.")
     return JSONResponse({
         "session_id": session_id,
         "message": "Rotation detection started",
@@ -127,6 +140,8 @@ async def detect_object_rotation(file: UploadFile = File(...)):
         results = object_model.predict(img, imgsz=640, conf=0.5, device=device)[0]
         
         detected_label = None
+        bounding_box = None
+        
         if results.boxes:
             box = results.boxes[0]
             cls_id = int(box.cls[0])
@@ -134,6 +149,10 @@ async def detect_object_rotation(file: UploadFile = File(...)):
             label = label_raw.strip().lower().replace(" ", "_")
             session["label_counts"][label] += 1
             detected_label = label
+            
+            # Get bounding box coordinates
+            x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+            bounding_box = {"x1": x1, "y1": y1, "x2": x2, "y2": y2}
         
         session["frame_count"] += 1
         
@@ -183,6 +202,7 @@ async def detect_object_rotation(file: UploadFile = File(...)):
             "frame_count": session["frame_count"],
             "target_frames": session["target_frames"],
             "current_detection": detected_label,
+            "bounding_box": bounding_box,
             "progress": session["frame_count"] / session["target_frames"]
         })
         
@@ -228,18 +248,23 @@ async def detect_object(file: UploadFile = File(...)):
 @app.post("/detect-feature/")
 async def detect_feature(file: UploadFile = File(...)):
     """Detect touched features on the object"""
+    global is_processing_feature
+    
     if not touch_model:
         raise HTTPException(status_code=500, detail="Touch model not loaded")
     
     try:
+        # If currently processing a feature, return no detection
+        if is_processing_feature:
+            return JSONResponse({"feature": None, "is_processing": True})
+            
         contents = await file.read()
         img = cv2.imdecode(np.frombuffer(contents, np.uint8), cv2.IMREAD_COLOR)
         
-        results = touch_model.predict(img, imgsz=640, conf=0.6, device=device)[0]
+        results = touch_model.predict(img, imgsz=640, conf=0.3, device=device)[0]
         if results.boxes:
             cls_id = int(results.boxes[0].cls[0])
             label = touch_model.names[cls_id].strip().lower().replace("_", " ")
-            audio_b64 = speak_as_base64(f"You touched a {label}. Please move to the next feature.")
             
             # Get bounding box for visualization
             box = results.boxes[0]
@@ -247,13 +272,48 @@ async def detect_feature(file: UploadFile = File(...)):
             
             return JSONResponse({
                 "feature": label,
-                "audio": audio_b64,
                 "bounding_box": {"x1": x1, "y1": y1, "x2": x2, "y2": y2},
-                "confidence": float(box.conf[0])
+                "confidence": float(box.conf[0]),
+                "is_processing": False
             })
-        return JSONResponse(status_code=400, content={"error": "No feature detected"})
+        return JSONResponse({"feature": None, "is_processing": False})
     except Exception as e:
         print(f"Feature detection error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/start-feature-announcement/")
+async def start_feature_announcement():
+    """Start the feature announcement process"""
+    global is_processing_feature
+    is_processing_feature = True
+    return JSONResponse({"status": "started"})
+
+@app.post("/end-feature-announcement/")
+async def end_feature_announcement():
+    """End the feature announcement process"""
+    global is_processing_feature
+    is_processing_feature = False
+    return JSONResponse({"status": "ended"})
+
+@app.post("/speak-feature/")
+async def speak_feature(data: dict):
+    """Generate audio for feature detection announcements"""
+    feature = data.get("feature", "")
+    is_next_instruction = data.get("is_next_instruction", False)
+    
+    try:
+        if is_next_instruction:
+            text = "Please move to the next feature"
+        else:
+            text = f"You touched a {feature}"
+        
+        audio_b64 = speak_as_base64(text)
+        return JSONResponse({
+            "audio": audio_b64,
+            "text": text
+        })
+    except Exception as e:
+        print(f"Feature speech error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/models/status")
