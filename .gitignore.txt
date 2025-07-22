@@ -1,0 +1,8 @@
+# Python example
+__pycache__/
+*.pyc
+.env
+
+# Node.js example
+node_modules/
+dist/
