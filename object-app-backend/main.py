@@ -94,6 +94,17 @@ class RotationSession(BaseModel):
     frame_count: int = 0
     target_frames: int = 50
     detection_threshold: int = 26
+    language: str = "en"
+
+def create_new_session(session_id: str, language: str = "en") -> dict:
+    """Create a new rotation session with standard parameters"""
+    return {
+        "label_counts": collections.Counter(),
+        "frame_count": 0,
+        "target_frames": 50,
+        "detection_threshold": 26,
+        "language": language
+    }
 
 def speak_as_base64(text: str, language: str = 'en') -> str:
     """Convert text to speech and return as base64 encoded audio"""
@@ -125,12 +136,7 @@ async def root():
 async def start_rotation_detection(session_data: dict):
     """Initialize rotation-based object detection session"""
     session_id = session_data.get("session_id", str(int(time.time())))
-    rotation_sessions[session_id] = {
-        "label_counts": collections.Counter(),
-        "frame_count": 0,
-        "target_frames": 200,
-        "detection_threshold": 101
-    }
+    rotation_sessions[session_id] = create_new_session(session_id)
     
     audio = speak_as_base64(" please hold and slowly rotate the object for analysis.")
     return JSONResponse({
@@ -152,9 +158,10 @@ async def detect_object_rotation(file: UploadFile = File(...), language: str = F
         rotation_sessions[session_id] = {
             "label_counts": collections.Counter(),
             "frame_count": 0,
-            "target_frames": 200,
-            "detection_threshold": 101,
-            "language": language
+            "target_frames": 50,
+            "detection_threshold": 26,
+            "language": language,
+            "consecutive_empty_frames": 0  # Add counter for frames with no detection
         }
     
     session = rotation_sessions[session_id]
@@ -175,10 +182,25 @@ async def detect_object_rotation(file: UploadFile = File(...), language: str = F
             label = label_raw.strip().lower().replace(" ", "_")
             session["label_counts"][label] += 1
             detected_label = label
+            session["consecutive_empty_frames"] = 0  # Reset counter when object detected
             
             # Get bounding box coordinates
             x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
             bounding_box = {"x1": x1, "y1": y1, "x2": x2, "y2": y2}
+        else:
+            session["consecutive_empty_frames"] += 1  # Increment counter when no object detected
+            
+            # If no object detected for 15 consecutive frames, stop the analysis
+            if session["consecutive_empty_frames"] >= 15:
+                message = "No object detected. Please show an object and try again." if language == "en" else "කිසිදු වස්තුවක් හඳුනා නොගැනිණි. කරුණාකර වස්තුවක් පෙන්වා නැවත උත්සාහ කරන්න."
+                audio_b64 = speak_as_base64(message, language)
+                del rotation_sessions[session_id]  # Clean up session
+                return JSONResponse({
+                    "detection_complete": True,
+                    "error": "No object in view",
+                    "audio": audio_b64,
+                    "language": language
+                })
         
         session["frame_count"] += 1
         
@@ -188,19 +210,19 @@ async def detect_object_rotation(file: UploadFile = File(...), language: str = F
                 most_common_label, count = session["label_counts"].most_common(1)[0]
                 if count >= session["detection_threshold"]:
                     # Get description in correct language
-                    intro = introductions[language].get(
+                    intro = introductions[session["language"]].get(
                         most_common_label,
-                        f"This is a {most_common_label.replace('_', ' ')}." if language == "en" else f"මෙය {most_common_label.replace('_', ' ')} එකකි."
+                        f"This is a {most_common_label.replace('_', ' ')}." if session["language"] == "en" else f"මෙය {most_common_label.replace('_', ' ')} එකකි."
                     )
                     
                     # Generate audio in correct language
-                    audio_b64 = speak_as_base64(intro, language)
+                    audio_b64 = speak_as_base64(intro, session["language"])
                     
                     # Clean up session
                     del rotation_sessions[session_id]
                     
                     # Return response with language-specific messages
-                    next_step = "Press T to start feature detection" if language == "en" else "ලක්ෂණ හඳුනා ගැනීම ආරම්භ කිරීමට T යතුර ඔබන්න"
+                    next_step = "Press T to start feature detection" if session["language"] == "en" else "ලක්ෂණ හඳුනා ගැනීම ආරම්භ කිරීමට T යතුර ඔබන්න"
                     
                     return JSONResponse({
                         "object": most_common_label,
@@ -208,29 +230,29 @@ async def detect_object_rotation(file: UploadFile = File(...), language: str = F
                         "detection_complete": True,
                         "audio": audio_b64,
                         "next_step": next_step,
-                        "language": language,
+                        "language": session["language"],
                         "bounding_box": bounding_box
                     })
                 else:
                     # Not confident enough
                     del rotation_sessions[session_id]
-                    message = "Detection not confident. Please rotate the object again." if language == "en" else "හඳුනා ගැනීම ස්ථිර නැත. කරුණාකර වස්තුව නැවත කරකවන්න."
-                    audio_b64 = speak_as_base64(message, language)
+                    message = "Detection not confident. Please rotate the object again." if session["language"] == "en" else "හඳුනා ගැනීම ස්ථිර නැත. කරුණාකර වස්තුව නැවත කරකවන්න."
+                    audio_b64 = speak_as_base64(message, session["language"])
                     return JSONResponse({
                         "detection_complete": False,
                         "error": "Detection not confident enough",
                         "audio": audio_b64,
-                        "language": language
+                        "language": session["language"]
                     })
             else:
                 del rotation_sessions[session_id]
-                message = "No object detected. Please try again." if language == "en" else "කිසිදු වස්තුවක් හඳුනා නොගැනිණි. කරුණාකර නැවත උත්සාහ කරන්න."
-                audio_b64 = speak_as_base64(message, language)
+                message = "No object detected. Please try again." if session["language"] == "en" else "කිසිදු වස්තුවක් හඳුනා නොගැනිණි. කරුණාකර නැවත උත්සාහ කරන්න."
+                audio_b64 = speak_as_base64(message, session["language"])
                 return JSONResponse({
                     "detection_complete": False,
                     "error": "No object detected",
                     "audio": audio_b64,
-                    "language": language
+                    "language": session["language"]
                 })
         
         # Still collecting frames
@@ -241,7 +263,7 @@ async def detect_object_rotation(file: UploadFile = File(...), language: str = F
             "current_detection": detected_label,
             "bounding_box": bounding_box,
             "progress": session["frame_count"] / session["target_frames"],
-            "language": language
+            "language": session["language"]
         })
         
     except Exception as e:
@@ -259,7 +281,7 @@ async def detect_object(file: UploadFile = File(...)):
         img = cv2.imdecode(np.frombuffer(contents, np.uint8), cv2.IMREAD_COLOR)
         
         label_counts = collections.Counter()
-        for _ in range(40):  # Simulate multiple frames
+        for _ in range(20):  # Reduced from 40
             results = object_model.predict(img, imgsz=640, conf=0.5, device=device)[0]
             if results.boxes:
                 cls_id = int(results.boxes[0].cls[0])

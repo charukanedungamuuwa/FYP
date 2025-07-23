@@ -22,7 +22,7 @@ function App() {
   const [currentFeature, setCurrentFeature] = useState(null);
   const [featureHoldStart, setFeatureHoldStart] = useState(null);
   const [featureCooldownUntil, setFeatureCooldownUntil] = useState(0);
-  const FEATURE_HOLD_SECONDS = 2000; // 2 seconds in milliseconds
+  const FEATURE_HOLD_SECONDS = 1000; // 2 seconds in milliseconds
   const FEATURE_COOLDOWN_SECONDS = 10000; // 10 seconds in milliseconds
   
   // Rotation detection state
@@ -121,19 +121,20 @@ function App() {
           // Clear canvas when detection is complete
           ctx.clearRect(0, 0, 640, 480);
 
-          // Play the object detection result
+          // Play the object detection result and instructions
           if (data.audio) {
-            const objectAudio = new Audio(`data:audio/mp3;base64,${data.audio}`);
-            await new Promise((resolve) => {
-              objectAudio.onended = resolve;
-              objectAudio.play().catch(e => {
-                console.log("Audio play failed:", e);
-                resolve();
-              });
-            });
-
-            // After object description, play the "Press T" instruction
             try {
+              // First play the object detection audio
+              await new Promise((resolve) => {
+                const objectAudio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+                objectAudio.onended = resolve;
+                objectAudio.play().catch(e => {
+                  console.log("Audio play failed:", e);
+                  resolve();
+                });
+              });
+
+              // Then play the feature detection instructions
               const instructionText = language === 'en'
                 ? "Lets go to the Feature Detection. Before we begin, please wear a glove on the hand that holds the shape. only Use your index finger of bare hand to touch the object's features.don't use other fingers to touch. This helps the system recognize your touch correctly.Press T to start feature detection"
                 : "අපි දැන් විශේෂාංග හඳුනා ගැනීමට යමු. ආරම්භ කිරීමට පෙර, කරුණාකර හැඩය අල්ලා සිටින අතට අත්බැඳක් පළඳින්න. වස්තුවේ විශේෂාංග ස්පර්ශ කිරීමට, ඔබේ හිස් අතේ දකුණු අඟල පමණක් භාවිත කරන්න. අනෙක් ඇඟිලි භාවිත නොකරන්න. මෙය පද්ධතියට ඔබේ ස්පර්ශය නිවැරදිව හඳුනා ගැනීමට උදව් වේ.ලක්ෂණ හඳුනා ගැනීම ආරම්භ කිරීමට T යතුර ඔබන්න";
@@ -144,20 +145,21 @@ function App() {
               });
 
               if (instructionResponse.data.audio) {
-                const instructionAudio = new Audio(`data:audio/mp3;base64,${instructionResponse.data.audio}`);
                 await new Promise((resolve) => {
+                  const instructionAudio = new Audio(`data:audio/mp3;base64,${instructionResponse.data.audio}`);
                   instructionAudio.onended = resolve;
                   instructionAudio.play().catch(() => resolve());
                 });
               }
             } catch (err) {
-              console.log("Failed to play T instruction:", err.message);
+              console.log("Failed to play audio instructions:", err.message);
             }
           }
         } else {
+          // Handle the case when no object is detected
           setStatus(language === 'en'
-            ? "Detection failed. Please try again."
-            : "හඳුනා ගැනීම අසාර්ථකයි. කරුණාකර නැවත උත්සාහ කරන්න."
+            ? data.error || "Detection failed. Please try again."
+            : data.error || "හඳුනා ගැනීම අසාර්ථකයි. කරුණාකර නැවත උත්සාහ කරන්න."
           );
           if (data.audio) {
             playAudio(data.audio);
@@ -165,12 +167,16 @@ function App() {
           setMode("none");
           setIsRotating(false);
           ctx.clearRect(0, 0, 640, 480);
+          // Reset progress
+          setRotationProgress(0);
         }
       } else {
         setRotationProgress(data.progress || 0);
+        // Update status message to show frames
+        const currentFrame = Math.round((data.progress || 0) * 50); // Since we know total frames is 50
         setStatus(language === 'en'
-          ? `Analyzing... ${Math.round((data.progress || 0) * 100)}%`
-          : `විශ්ලේෂණය කරමින්... ${Math.round((data.progress || 0) * 100)}%`
+          ? `Analyzing... Frame ${currentFrame}/50 (${Math.round((data.progress || 0) * 100)}%)`
+          : `විශ්ලේෂණය කරමින්... රාමු ${currentFrame}/50 (${Math.round((data.progress || 0) * 100)}%)`
         );
       }
     } catch (err) {
@@ -547,9 +553,9 @@ function App() {
           margin: "2rem auto",
           padding: "2rem",
           maxWidth: "500px",
-          backgroundColor: "#f5f5f5",
+          backgroundColor: "#0f0707ff",
           borderRadius: "10px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+          boxShadow: "0 2px 4px rgba(51, 35, 35, 0.1)"
         }}>
           <h3 style={{ marginBottom: "2rem" }}>Select Your Language / ඔබගේ භාෂාව තෝරන්න</h3>
           <p style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>
@@ -624,7 +630,7 @@ function App() {
               <div style={{ 
                 width: "640px", 
                 height: "20px", 
-                backgroundColor: "#f0f0f0", 
+                backgroundColor: "#160d0dff", 
                 borderRadius: "10px",
                 margin: "0 auto"
               }}>
