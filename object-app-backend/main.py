@@ -4,7 +4,7 @@ import base64
 import collections
 import time
 from ultralytics import YOLO
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from gtts import gTTS
@@ -37,23 +37,24 @@ except Exception as e:
     object_model = None
     touch_model = None
 
-# Object introductions - enhanced like in your original code
-# introductions = {
-#     "cube": "You are holding a  cube. It feels the same on all sides. It has six flat square faces, twelve straight edges, and eight corners called vertices. All sides are equal in size.",
-#     "cuboid": "You are holding a cuboid. It feels like a box. It has six flat faces, shaped like rectangles, twelve straight edges, and eight vertices. Some sides are longer than others.",
-#     "cone": "You are holding a cone. Feel the round base at the bottom and a smooth curved surface going up to a single sharp point called the apex. It has one edge and one vertex.",
-#     "tetrahedrone": "You are holding a tetrahedron. It feels like a pyramid with a triangle base. It has four triangular faces, six straight edges, and four vertices.",
-#     "cylinder": "You are holding a cylinder. It has a round base and a round top, connected by a smooth curved surface. You will not feel any corners or vertices.",
-#     "prism": "You are holding a triangular prism. It has two triangle-shaped ends and three rectangle-shaped sides. It has nine edges and six vertices."
-# }
-
+# Object introductions in both languages
 introductions = {
-    "cube": " It feels the same on all sides. It has six flat square faces, twelve straight edges, and eight corners called vertices. All sides are equal in size.",
-    "cuboid": "It feels like a box. It has six flat faces, shaped like rectangles, twelve straight edges, and eight vertices. Some sides are longer than others.",
-    "cone": "Feel the round base at the bottom and a smooth curved surface going up to a single sharp point called the apex. It has one edge and one vertex.",
-    "tetrahedrone": "It feels like a pyramid with a triangle base. It has four triangular faces, six straight edges, and four vertices.",
-    "cylinder": " It has a round base and a round top, connected by a smooth curved surface. You will not feel any corners or vertices.",
-    "prism": "It has two triangle-shaped ends and three rectangle-shaped sides. It has nine edges and six vertices."
+    "en": {
+        "cube": "You are holding a cube. It feels the same on all sides. It has six flat square faces, twelve straight edges, and eight corners called vertices. All sides are equal in size.",
+        "cuboid": "You are holding a cuboid. It feels like a box. It has six flat faces, shaped like rectangles, twelve straight edges, and eight vertices. Some sides are longer than others.",
+        "cone": "You are holding a cone. Feel the round base at the bottom and a smooth curved surface going up to a single sharp point called the apex. It has one edge and one vertex.",
+        "tetrahedrone": "You are holding a tetrahedron. It feels like a pyramid with a triangle base. It has four triangular faces, six straight edges, and four vertices.",
+        "cylinder": "You are holding a cylinder. It has a round base and a round top, connected by a smooth curved surface. You will not feel any corners or vertices.",
+        "prism": "You are holding a triangular prism. It has two triangle-shaped ends and three rectangle-shaped sides. It has nine edges and six vertices."
+    },
+    "si": {
+        "cube": "ඔබ අතැතිව ඇත්තේ ඝනකයකි. එය සෑම පැත්තකින්ම එක හා සමාන ය. එයට සමචතුරස්‍රාකාර පැති හයක්, සෘජු දාර දොළහක් සහ සිරස් අට ක් ඇත. සියලුම පැති එක හා සමාන ප්‍රමාණයේ වේ.",
+        "cuboid": "ඔබ අතැතිව ඇත්තේ දීර්ඝ ඝනකයකි. එය පෙට්ටියක් මෙන් දැනේ. එයට තිරස්කෝණාස්‍රාකාර පැති හයක්, සෘජු දාර දොළහක් සහ සිරස් අටක් ඇත. සමහර පැති අනෙක් ඒවාට වඩා දිග ය.",
+        "cone": "ඔබ අතැතිව ඇත්තේ ශංකුවකි. පහළ වෘත්තාකාර පාදය සහ ඉහළට යන තුඩ දක්වා සිනිඳු වක්‍ර පෘෂ්ඨය හඳුනා ගන්න. එයට එක් දාරයක් සහ එක් සිරසක් ඇත.",
+        "tetrahedrone": "ඔබ අතැතිව ඇත්තේ චතුස්තලයකි. එය ත්‍රිකෝණාකාර පාදයක් සහිත පිරමිඩයක් මෙන් දැනේ. එයට ත්‍රිකෝණාකාර මුහුණත් හතරක්, සෘජු දාර හයක් සහ සිරස් හතරක් ඇත.",
+        "cylinder": "ඔබ අතැතිව ඇත්තේ සිලින්ඩරයකි. එයට වෘත්තාකාර පාදයක් සහ මුදුනක් ඇති අතර ඒවා සිනිඳු වක්‍ර පෘෂ්ඨයකින් සම්බන්ධ වේ. එයට කිසිදු කෙළවරක් හෝ සිරස් නොමැත.",
+        "prism": "ඔබ අතැතිව ඇත්තේ ත්‍රිකෝණාකාර ප්‍රිස්මයකි. එයට ත්‍රිකෝණාකාර කෙළවර දෙකක් සහ තිරස්කෝණාස්‍රාකාර පැති තුනක් ඇත. එයට දාර නවයක් සහ සිරස් හයක් ඇත."
+    }
 }
 
 
@@ -63,17 +64,41 @@ rotation_sessions = {}
 # Feature detection state
 is_processing_feature = False
 
+# Feature translations
+feature_translations = {
+    "en": {
+        "touching_circle_face": "circle face",
+        "touching_curved_edge": "curved edge",
+        "touching_curved_surface": "curved surface",
+        "touching_rectangular_face": "rectangular face",
+        "touching_square_face": "square face",
+        "touching_straight_edge": "straight edge",
+        "touching_triangular_face": "triangular face",
+        "touching_vertex": "vertex"
+    },
+    "si": {
+        "touching_circle_face": "වෘත්තාකාර මුහුණත",
+        "touching_curved_edge": "වක්‍ර දාරය",
+        "touching_curved_surface": "වක්‍ර පෘෂ්ඨය",
+        "touching_rectangular_face": "තිරස්කෝණාස්‍රාකාර මුහුණත",
+        "touching_square_face": "සමචතුරස්‍රාකාර මුහුණත",
+        "touching_straight_edge": "සෘජු දාරය",
+        "touching_triangular_face": "ත්‍රිකෝණාකාර මුහුණත",
+        "touching_vertex": "ශීර්ෂය"
+    }
+}
+
 class RotationSession(BaseModel):
     session_id: str
     label_counts: dict = {}
     frame_count: int = 0
-    target_frames: int = 200
-    detection_threshold: int = 101
+    target_frames: int = 50
+    detection_threshold: int = 26
 
-def speak_as_base64(text: str) -> str:
+def speak_as_base64(text: str, language: str = 'en') -> str:
     """Convert text to speech and return as base64 encoded audio"""
     try:
-        tts = gTTS(text=text)
+        tts = gTTS(text=text, lang=language)
         buf = BytesIO()
         tts.write_to_fp(buf)
         buf.seek(0)
@@ -115,20 +140,21 @@ async def start_rotation_detection(session_data: dict):
     })
 
 @app.post("/detect-object-rotation/")
-async def detect_object_rotation(file: UploadFile = File(...)):
+async def detect_object_rotation(file: UploadFile = File(...), language: str = Form("en")):
     """Process single frame during rotation detection"""
     if not object_model:
         raise HTTPException(status_code=500, detail="Object model not loaded")
     
     # Get session_id from form data or headers
-    session_id = "default"  # You can modify this to get from request
+    session_id = "default"
     
     if session_id not in rotation_sessions:
         rotation_sessions[session_id] = {
             "label_counts": collections.Counter(),
             "frame_count": 0,
             "target_frames": 200,
-            "detection_threshold": 101
+            "detection_threshold": 101,
+            "language": language
         }
     
     session = rotation_sessions[session_id]
@@ -161,39 +187,50 @@ async def detect_object_rotation(file: UploadFile = File(...)):
             if session["label_counts"]:
                 most_common_label, count = session["label_counts"].most_common(1)[0]
                 if count >= session["detection_threshold"]:
-                    intro = introductions.get(most_common_label, f"This is a {most_common_label.replace('_', ' ')}.")
-                    full_message = f"You are holding a {most_common_label.replace('_', ' ')}. {intro}"
-                    audio_b64 = speak_as_base64(full_message)
+                    # Get description in correct language
+                    intro = introductions[language].get(
+                        most_common_label,
+                        f"This is a {most_common_label.replace('_', ' ')}." if language == "en" else f"මෙය {most_common_label.replace('_', ' ')} එකකි."
+                    )
+                    
+                    # Generate audio in correct language
+                    audio_b64 = speak_as_base64(intro, language)
                     
                     # Clean up session
                     del rotation_sessions[session_id]
                     
+                    # Return response with language-specific messages
+                    next_step = "Press T to start feature detection" if language == "en" else "ලක්ෂණ හඳුනා ගැනීම ආරම්භ කිරීමට T යතුර ඔබන්න"
+                    
                     return JSONResponse({
                         "object": most_common_label,
                         "description": intro,
-                        "full_message": full_message,
-                        "confidence": count,
-                        "total_votes": session["frame_count"],
                         "detection_complete": True,
                         "audio": audio_b64,
-                        "next_step": "Press T to start feature detection"
+                        "next_step": next_step,
+                        "language": language,
+                        "bounding_box": bounding_box
                     })
                 else:
                     # Not confident enough
                     del rotation_sessions[session_id]
-                    audio_b64 = speak_as_base64("Detection not confident. Please rotate the object again.")
+                    message = "Detection not confident. Please rotate the object again." if language == "en" else "හඳුනා ගැනීම ස්ථිර නැත. කරුණාකර වස්තුව නැවත කරකවන්න."
+                    audio_b64 = speak_as_base64(message, language)
                     return JSONResponse({
                         "detection_complete": False,
                         "error": "Detection not confident enough",
-                        "audio": audio_b64
+                        "audio": audio_b64,
+                        "language": language
                     })
             else:
                 del rotation_sessions[session_id]
-                audio_b64 = speak_as_base64("No object detected. Please try again.")
+                message = "No object detected. Please try again." if language == "en" else "කිසිදු වස්තුවක් හඳුනා නොගැනිණි. කරුණාකර නැවත උත්සාහ කරන්න."
+                audio_b64 = speak_as_base64(message, language)
                 return JSONResponse({
                     "detection_complete": False,
                     "error": "No object detected",
-                    "audio": audio_b64
+                    "audio": audio_b64,
+                    "language": language
                 })
         
         # Still collecting frames
@@ -203,7 +240,8 @@ async def detect_object_rotation(file: UploadFile = File(...)):
             "target_frames": session["target_frames"],
             "current_detection": detected_label,
             "bounding_box": bounding_box,
-            "progress": session["frame_count"] / session["target_frames"]
+            "progress": session["frame_count"] / session["target_frames"],
+            "language": language
         })
         
     except Exception as e:
@@ -246,7 +284,7 @@ async def detect_object(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/detect-feature/")
-async def detect_feature(file: UploadFile = File(...)):
+async def detect_feature(file: UploadFile = File(...), language: str = Form("en")):
     """Detect touched features on the object"""
     global is_processing_feature
     
@@ -264,14 +302,18 @@ async def detect_feature(file: UploadFile = File(...)):
         results = touch_model.predict(img, imgsz=640, conf=0.3, device=device)[0]
         if results.boxes:
             cls_id = int(results.boxes[0].cls[0])
-            label = touch_model.names[cls_id].strip().lower().replace("_", " ")
+            label_raw = touch_model.names[cls_id]
+            label = label_raw.strip().lower()
+            
+            # Get translated feature name
+            feature_name = feature_translations[language].get(label, label)
             
             # Get bounding box for visualization
             box = results.boxes[0]
             x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
             
             return JSONResponse({
-                "feature": label,
+                "feature": feature_name,
                 "bounding_box": {"x1": x1, "y1": y1, "x2": x2, "y2": y2},
                 "confidence": float(box.conf[0]),
                 "is_processing": False
@@ -299,15 +341,18 @@ async def end_feature_announcement():
 async def speak_feature(data: dict):
     """Generate audio for feature detection announcements"""
     feature = data.get("feature", "")
+    language = data.get("language", "en")
     is_next_instruction = data.get("is_next_instruction", False)
     
     try:
         if is_next_instruction:
-            text = "Please move to the next feature"
+            text = "Please move to the next feature" if language == "en" else "කරුණාකර ඊළඟ ලක්ෂණයට යන්න"
         else:
-            text = f"You touched a {feature}"
+            # Get translated feature name if available
+            feature_name = feature_translations[language].get(feature, feature)
+            text = f"You touched a {feature_name}" if language == "en" else f"ඔබ {feature_name} ස්පර්ශ කළා"
         
-        audio_b64 = speak_as_base64(text)
+        audio_b64 = speak_as_base64(text, language)
         return JSONResponse({
             "audio": audio_b64,
             "text": text
@@ -331,10 +376,12 @@ async def get_models_status():
 async def speak_text(data: dict):
     """Convert any text to speech"""
     text = data.get("text", "")
+    language = data.get("language", "en")  # Default to English if not specified
+    
     if not text:
         return JSONResponse(status_code=400, content={"error": "No text provided"})
     
-    audio_b64 = speak_as_base64(text)
+    audio_b64 = speak_as_base64(text, language)
     return JSONResponse({"audio": audio_b64})
 
 if __name__ == "__main__":
