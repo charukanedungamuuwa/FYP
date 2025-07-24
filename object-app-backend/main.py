@@ -48,12 +48,12 @@ introductions = {
         "prism": "You are holding a triangular prism. It has two triangle-shaped ends and three rectangle-shaped sides. It has nine edges and six vertices."
     },
     "si": {
-        "cube": "ඔබ අතැතිව ඇත්තේ ඝනකයකි. එය සෑම පැත්තකින්ම එක හා සමාන ය. එයට සමචතුරස්‍රාකාර පැති හයක්, සෘජු දාර දොළහක් සහ සිරස් අට ක් ඇත. සියලුම පැති එක හා සමාන ප්‍රමාණයේ වේ.",
-        "cuboid": "ඔබ අතැතිව ඇත්තේ දීර්ඝ ඝනකයකි. එය පෙට්ටියක් මෙන් දැනේ. එයට තිරස්කෝණාස්‍රාකාර පැති හයක්, සෘජු දාර දොළහක් සහ සිරස් අටක් ඇත. සමහර පැති අනෙක් ඒවාට වඩා දිග ය.",
-        "cone": "ඔබ අතැතිව ඇත්තේ ශංකුවකි. පහළ වෘත්තාකාර පාදය සහ ඉහළට යන තුඩ දක්වා සිනිඳු වක්‍ර පෘෂ්ඨය හඳුනා ගන්න. එයට එක් දාරයක් සහ එක් සිරසක් ඇත.",
-        "tetrahedrone": "ඔබ අතැතිව ඇත්තේ චතුස්තලයකි. එය ත්‍රිකෝණාකාර පාදයක් සහිත පිරමිඩයක් මෙන් දැනේ. එයට ත්‍රිකෝණාකාර මුහුණත් හතරක්, සෘජු දාර හයක් සහ සිරස් හතරක් ඇත.",
-        "cylinder": "ඔබ අතැතිව ඇත්තේ සිලින්ඩරයකි. එයට වෘත්තාකාර පාදයක් සහ මුදුනක් ඇති අතර ඒවා සිනිඳු වක්‍ර පෘෂ්ඨයකින් සම්බන්ධ වේ. එයට කිසිදු කෙළවරක් හෝ සිරස් නොමැත.",
-        "prism": "ඔබ අතැතිව ඇත්තේ ත්‍රිකෝණාකාර ප්‍රිස්මයකි. එයට ත්‍රිකෝණාකාර කෙළවර දෙකක් සහ තිරස්කෝණාස්‍රාකාර පැති තුනක් ඇත. එයට දාර නවයක් සහ සිරස් හයක් ඇත."
+        "cube": "ඔබ අතැතිව ඇත්තේ ඝනකයකි. එය සෑම පැත්තකින්ම එක හා සමාන ය. එයට සමචතුරස්‍රාකාර පැති හයක්, සෘජු දාර දොළහක් සහ ශීර්ෂ අටක් ඇත. සියලුම පැති එක හා සමාන ප්‍රමාණයේ වේ.",
+        "cuboid": "ඔබ අතැතිව ඇත්තේ ඝනකාභයකි. එය පෙට්ටියක් මෙන් දැනේ. එයට සෘජුකෝණාස්‍රාකාර පැති හයක්, සෘජු දාර දොළහක් සහ ශීර්ෂ අටක් ඇත. සමහර පැති අනෙක් ඒවාට වඩා දිග ය.",
+        "cone": "ඔබ අතැතිව ඇත්තේ ක‌ේතුවකි. පහළ වෘත්තාකාර පාදය සහ ඉහළට යන තුඩ දක්වා සිනිඳු වක්‍ර පෘෂ්ඨය හඳුනා ගන්න. එයට එක් වක්‍රදාරයක් සහ එක් ශීර්ෂයක් ඇත.",
+        "tetrahedrone": "ඔබ අතැතිව ඇත්තේ චතුස්තලයකි. එය ත්‍රිකෝණාකාර පාදයක් සහිත පිරමිඩයක් මෙන් දැනේ. එයට ත්‍රිකෝණාකාර මුහුණත් හතරක්, සෘජු දාර හයක් සහ ශීර්ෂ හතරක් ඇත.",
+        "cylinder": "ඔබ අතැතිව ඇත්තේ සිලින්ඩරයකි. එයට වෘත්තාකාර පාදයක් සහ මුදුනක් ඇති අතර ඒවා සිනිඳු වක්‍ර පෘෂ්ඨයකින් සම්බන්ධ වේ. එයට වක්‍රදාර 2ක් ඇත. ශීර්ෂ නොමැත.",
+        "prism": "ඔබ අතැතිව ඇත්තේ ත්‍රිකෝණාකාර ප්‍රිස්මයකි. එයට ත්‍රිකෝණාකාර කෙළවර දෙකක් සහ සෘජුකෝණාස්‍රාකාර පැති තුනක් ඇත. එයට දාර නවයක් සහ ශීර්ෂ හයක් ඇත."
     }
 }
 
@@ -64,27 +64,75 @@ rotation_sessions = {}
 # Feature detection state
 is_processing_feature = False
 
-# Feature translations
+# Feature translations and descriptions
 feature_translations = {
     "en": {
-        "touching_circle_face": "circle face",
-        "touching_curved_edge": "curved edge",
-        "touching_curved_surface": "curved surface",
-        "touching_rectangular_face": "rectangular face",
-        "touching_square_face": "square face",
-        "touching_straight_edge": "straight edge",
-        "touching_triangular_face": "triangular face",
-        "touching_vertex": "vertex"
+        "touching_circle_face": {
+            "name": "circle face",
+            "description": "You are touching a circular face. This is a flat, round surface that forms the base or top of shapes like cylinders and cones. A circle has no corners and is perfectly round."
+        },
+        "touching_curved_edge": {
+            "name": "curved edge",
+            "description": "You are touching a curved edge. This is a smooth, rounded line where two surfaces meet. Unlike straight edges, curved edges follow a bent or circular path."
+        },
+        "touching_curved_surface": {
+            "name": "curved surface",
+            "description": "You are touching a curved surface. This is a smooth, rounded area that curves outward or inward. You can feel how it's not flat like other faces, but instead curves continuously."
+        },
+        "touching_rectangular_face": {
+            "name": "rectangular face",
+            "description": "You are touching a rectangular face. This is a flat surface with four straight edges and four right angles. Two edges are longer than the other two."
+        },
+        "touching_square_face": {
+            "name": "square face",
+            "description": "You are touching a square face. This is a flat surface with four equal straight edges and four right angles. All sides are equal in length."
+        },
+        "touching_straight_edge": {
+            "name": "straight edge",
+            "description": "You are touching a straight edge. This is a line where two faces meet at a fixed angle. It forms the shortest path between two vertices and doesn't curve."
+        },
+        "touching_triangular_face": {
+            "name": "triangular face",
+            "description": "You are touching a triangular face. This is a flat surface with exactly three straight edges and three angles. It forms one of the simplest and strongest geometric shapes."
+        },
+        "touching_vertex": {
+            "name": "vertex",
+            "description": "You are touching a vertex. This is a point where three or more edges meet. It forms a corner of the shape and is the meeting point of multiple faces."
+        }
     },
     "si": {
-        "touching_circle_face": "වෘත්තාකාර මුහුණත",
-        "touching_curved_edge": "වක්‍ර දාරය",
-        "touching_curved_surface": "වක්‍ර පෘෂ්ඨය",
-        "touching_rectangular_face": "තිරස්කෝණාස්‍රාකාර මුහුණත",
-        "touching_square_face": "සමචතුරස්‍රාකාර මුහුණත",
-        "touching_straight_edge": "සෘජු දාරය",
-        "touching_triangular_face": "ත්‍රිකෝණාකාර මුහුණත",
-        "touching_vertex": "ශීර්ෂය"
+        "touching_circle_face": {
+            "name": "වෘත්තාකාර මුහුණත",
+            "description": "ඔබ ස්පර්ශ කරන්නේ වෘත්තාකාර මුහුණතකි. මෙය සිලින්ඩර සහ ක‌ේතු වැනි හැඩයන්හි පාදය හෝ මුදුන සාදන පැතලි, වටකුරු පෘෂ්ඨයකි. වෘත්තයකට ශීර්ෂ නොමැති අතර එය සම්පූර්ණයෙන්ම වටකුරුය."
+        },
+        "touching_curved_edge": {
+            "name": "වක්‍ර දාරය",
+            "description": "ඔබ ස්පර්ශ කරන්නේ වක්‍ර දාරයකි. මෙය පෘෂ්ඨ දෙකක් හමුවන තැන ඇති සිනිඳු, වටකුරු රේඛාවකි. සෘජු දාර වලට වඩා වෙනස් ලෙස, වක්‍ර දාර නැමුණු හෝ වෘත්තාකාර මාර්ගයක් ඔස්සේ ගමන් කරයි."
+        },
+        "touching_curved_surface": {
+            "name": "වක්‍ර පෘෂ්ඨය",
+            "description": "ඔබ ස්පර්ශ කරන්නේ වක්‍ර පෘෂ්ඨයකි. මෙය පිටතට හෝ ඇතුළට නැමෙන සිනිඳු, වටකුරු ප්‍රදේශයකි. අනෙකුත් මුහුණත් මෙන් පැතලි නොවන බවත්, ඒ වෙනුවට අඛණ්ඩව වක්‍ර වන බවත් ඔබට දැනෙනු ඇත."
+        },
+        "touching_rectangular_face": {
+            "name": "සෘජුකෝණාස්‍රාකාර මුහුණත",
+            "description": "ඔබ ස්පර්ශ කරන්නේ සෘජුකෝණාස්‍රාකාර මුහුණතකි. මෙය සෘජු දාර හතරක් සහ සෘජු කෝණ හතරක් සහිත පැතලි පෘෂ්ඨයකි. දාර දෙකක් අනෙක් දෙකට වඩා දිගය."
+        },
+        "touching_square_face": {
+            "name": "සමචතුරස්‍රාකාර මුහුණත",
+            "description": "ඔබ ස්පර්ශ කරන්නේ සමචතුරස්‍රාකාර මුහුණතකි. මෙය සමාන සෘජු දාර හතරක් සහ සෘජු කෝණ හතරක් සහිත පැතලි පෘෂ්ඨයකි. සියලුම පැති දිග සමාන වේ."
+        },
+        "touching_straight_edge": {
+            "name": "සෘජු දාරය",
+            "description": "ඔබ ස්පර්ශ කරන්නේ සෘජු දාරයකි. මෙය සෘජු රේඛාවකි. එය ශීර්ෂ දෙකක් අතර කෙටිම මාර්ගය සාදන අතර වක්‍ර නොවේ."
+        },
+        "touching_triangular_face": {
+            "name": "ත්‍රිකෝණාකාර මුහුණත",
+            "description": "ඔබ ස්පර්ශ කරන්නේ ත්‍රිකෝණාකාර මුහුණතකි. මෙය සෘජු දාර තුනක් සහ කෝණ තුනක් සහිත පැතලි පෘෂ්ඨයකි. එය සරලම සහ ශක්තිමත්ම ජ්‍යාමිතික හැඩයන්ගෙන් එකක් සාදයි."
+        },
+        "touching_vertex": {
+            "name": "ශීර්ෂය",
+            "description": "ඔබ ස්පර්ශ කරන්නේ ශීර්ෂයකි. මෙය දාර තුනක් හෝ ඊට වැඩි ගණනක් හමුවන ලක්ෂ්‍යයකි. එය හැඩයේ කෙළවරක් සාදන අතර බහු මුහුණත් හමුවන ස්ථානයයි."
+        }
     }
 }
 
@@ -327,15 +375,17 @@ async def detect_feature(file: UploadFile = File(...), language: str = Form("en"
             label_raw = touch_model.names[cls_id]
             label = label_raw.strip().lower()
             
-            # Get translated feature name
-            feature_name = feature_translations[language].get(label, label)
+            # Get feature info from translations
+            feature_info = feature_translations[language].get(label, {"name": label, "description": ""})
             
             # Get bounding box for visualization
             box = results.boxes[0]
             x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
             
             return JSONResponse({
-                "feature": feature_name,
+                "feature": label,  # Return the raw feature name for frontend processing
+                "feature_name": feature_info["name"],  # Return translated name
+                "description": feature_info["description"],  # Return description
                 "bounding_box": {"x1": x1, "y1": y1, "x2": x2, "y2": y2},
                 "confidence": float(box.conf[0]),
                 "is_processing": False
@@ -370,9 +420,9 @@ async def speak_feature(data: dict):
         if is_next_instruction:
             text = "Please move to the next feature" if language == "en" else "කරුණාකර ඊළඟ ලක්ෂණයට යන්න"
         else:
-            # Get translated feature name if available
-            feature_name = feature_translations[language].get(feature, feature)
-            text = f"You touched a {feature_name}" if language == "en" else f"ඔබ {feature_name} ස්පර්ශ කළා"
+            # Get translated feature name and description
+            feature_info = feature_translations[language].get(feature, {"name": feature, "description": ""})
+            text = feature_info["description"] if feature_info["description"] else f"You touched a {feature_info['name']}"
         
         audio_b64 = speak_as_base64(text, language)
         return JSONResponse({

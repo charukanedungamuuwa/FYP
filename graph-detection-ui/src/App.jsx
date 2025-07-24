@@ -23,7 +23,7 @@ function App() {
   const [featureHoldStart, setFeatureHoldStart] = useState(null);
   const [featureCooldownUntil, setFeatureCooldownUntil] = useState(0);
   const FEATURE_HOLD_SECONDS = 1000; // 2 seconds in milliseconds
-  const FEATURE_COOLDOWN_SECONDS = 10000; // 10 seconds in milliseconds
+  const FEATURE_COOLDOWN_SECONDS = 1000; // 10 seconds in milliseconds
   
   // Rotation detection state
   const [rotationSession, setRotationSession] = useState(null);
@@ -136,8 +136,8 @@ function App() {
 
               // Then play the feature detection instructions
               const instructionText = language === 'en'
-                ? "Lets go to the Feature Detection. Before we begin, please wear a glove on the hand that holds the shape. only Use your index finger of bare hand to touch the object's features.don't use other fingers to touch. This helps the system recognize your touch correctly.Press T to start feature detection"
-                : "අපි දැන් විශේෂාංග හඳුනා ගැනීමට යමු. ආරම්භ කිරීමට පෙර, කරුණාකර හැඩය අල්ලා සිටින අතට අත්බැඳක් පළඳින්න. වස්තුවේ විශේෂාංග ස්පර්ශ කිරීමට, ඔබේ හිස් අතේ දකුණු අඟල පමණක් භාවිත කරන්න. අනෙක් ඇඟිලි භාවිත නොකරන්න. මෙය පද්ධතියට ඔබේ ස්පර්ශය නිවැරදිව හඳුනා ගැනීමට උදව් වේ.ලක්ෂණ හඳුනා ගැනීම ආරම්භ කිරීමට T යතුර ඔබන්න";
+                ? "Lets go to the Feature Detection of shapes . shapes are consist with different kinds of edges,faces,surfaces and vertices. Before we begin, please wear a glove on the hand that holds the shape. only Use your index finger of bare hand to touch the object's features.don't use other fingers to touch. This helps the system recognize your touch correctly.Press T to start feature detection"
+                : "අපි දැන් ඝනවස්තු වල ක‌ොටස් හඳුනා ගැනීමට යමු. ඝනවස්තූන් විවිධ ආකාරයේ දාර, මුහුණත්, මතුපිටවල් හා ශීර්ෂ වලින් සමන්විත වේ.ම‌ෙය ආරම්භ කිරීමට පෙර, කරුණාකර ඝනවස්තුව රඳවාගනෙ සිටින අතට අත්වැසුමක් පළඳින්න. ඝනවස්තුවේ ක‌ොටස් ස්පර්ශ කිරීමට, ඔබේ හිස් අතේ දබර ඇඟිල්ල පමණක් භාවිත කරන්න. අනෙක් ඇඟිලි භාවිත නොකරන්න. මෙය පද්ධතියට ඔබේ ස්පර්ශය නිවැරදිව හඳුනා ගැනීමට උදව් වේ. ලක්ෂණ හඳුනා ගැනීම ආරම්භ කිරීමට T යතුර ඔබන්න";
               
               const instructionResponse = await axios.post(`${API_BASE_URL}/speak/`, {
                 text: instructionText,
@@ -204,7 +204,7 @@ function App() {
 
       const formData = new FormData();
       formData.append("file", blob, "frame.jpg");
-      formData.append("language", language); // Add language parameter
+      formData.append("language", language);
 
       const response = await axios.post(`${API_BASE_URL}/detect-feature/`, formData);
       const data = response.data;
@@ -225,7 +225,7 @@ function App() {
         // Draw text
         ctx.fillStyle = '#00FF00';
         ctx.font = '20px Arial';
-        ctx.fillText(data.feature.replace("_", " "), x1, y1 - 10);
+        ctx.fillText(data.feature_name || data.feature, x1, y1 - 10);
       } else {
         // Clear canvas if no feature detected
         const ctx = canvasRef.current.getContext('2d');
@@ -248,66 +248,66 @@ function App() {
         } else if (foundFeature === currentFeature && 
                    featureHoldStart && 
                    (now - featureHoldStart >= FEATURE_HOLD_SECONDS)) {
-        
-        // Start the feature announcement process
-        await axios.post(`${API_BASE_URL}/start-feature-announcement/`);
-
-        try {
-          // First announce the detected feature
-          const featureResponse = await axios.post(`${API_BASE_URL}/speak-feature/`, {
-            feature: foundFeature,
-            is_next_instruction: false,
-            language: language // Add language parameter
-          });
           
-          if (featureResponse.data.audio) {
-            const audio = new Audio(`data:audio/mp3;base64,${featureResponse.data.audio}`);
-            await new Promise((resolve) => {
-              audio.onended = resolve;
-              audio.play().catch(() => resolve());
-            });
-          }
+          // Start the feature announcement process
+          await axios.post(`${API_BASE_URL}/start-feature-announcement/`);
 
-          // Then tell to move to next feature
-          const nextResponse = await axios.post(`${API_BASE_URL}/speak-feature/`, {
-            is_next_instruction: true,
-            language: language // Add language parameter
-          });
-          
-          if (nextResponse.data.audio) {
-            const audio = new Audio(`data:audio/mp3;base64,${nextResponse.data.audio}`);
-            await new Promise((resolve) => {
-              audio.onended = resolve;
-              audio.play().catch(() => resolve());
+          try {
+            // Announce the detected feature with description
+            const featureResponse = await axios.post(`${API_BASE_URL}/speak-feature/`, {
+              feature: foundFeature,
+              is_next_instruction: false,
+              language: language
             });
-          }
+            
+            if (featureResponse.data.audio) {
+              const audio = new Audio(`data:audio/mp3;base64,${featureResponse.data.audio}`);
+              await new Promise((resolve) => {
+                audio.onended = resolve;
+                audio.play().catch(() => resolve());
+              });
+            }
 
-          // After both audio messages complete, reset for next feature
-          setFeatureCooldownUntil(Date.now() + FEATURE_COOLDOWN_SECONDS);
-          setCurrentFeature(null);
-          setFeatureHoldStart(null);
-        } finally {
-          // Always end the announcement process, even if there was an error
-          await axios.post(`${API_BASE_URL}/end-feature-announcement/`);
+            // Then tell to move to next feature
+            const nextResponse = await axios.post(`${API_BASE_URL}/speak-feature/`, {
+              is_next_instruction: true,
+              language: language
+            });
+            
+            if (nextResponse.data.audio) {
+              const audio = new Audio(`data:audio/mp3;base64,${nextResponse.data.audio}`);
+              await new Promise((resolve) => {
+                audio.onended = resolve;
+                audio.play().catch(() => resolve());
+              });
+            }
+
+            // After both audio messages complete, reset for next feature
+            setFeatureCooldownUntil(Date.now() + FEATURE_COOLDOWN_SECONDS);
+            setCurrentFeature(null);
+            setFeatureHoldStart(null);
+          } finally {
+            // Always end the announcement process, even if there was an error
+            await axios.post(`${API_BASE_URL}/end-feature-announcement/`);
+          }
         }
+      } else if (now > featureCooldownUntil) {
+        // Only reset if we're not in cooldown
+        setCurrentFeature(null);
+        setFeatureHoldStart(null);
       }
-    } else if (now > featureCooldownUntil) {
-      // Only reset if we're not in cooldown
-      setCurrentFeature(null);
-      setFeatureHoldStart(null);
+    } catch (err) {
+      console.log("Feature detection error:", err);
+      // Clear canvas on error
+      const ctx = canvasRef.current.getContext('2d');
+      ctx.clearRect(0, 0, 640, 480);
+      
+      if (Date.now() > featureCooldownUntil) {
+        setCurrentFeature(null);
+        setFeatureHoldStart(null);
+      }
     }
-  } catch (err) {
-    console.log("Feature detection error:", err);
-    // Clear canvas on error
-    const ctx = canvasRef.current.getContext('2d');
-    ctx.clearRect(0, 0, 640, 480);
-    
-    if (Date.now() > featureCooldownUntil) {
-      setCurrentFeature(null);
-      setFeatureHoldStart(null);
-    }
-  }
-}, [mode, featuresMode, currentFeature, featureHoldStart, featureCooldownUntil, captureFrame, language]);
+  }, [mode, featuresMode, currentFeature, featureHoldStart, featureCooldownUntil, captureFrame, language]);
 
   // Start feature detection mode
   const startFeatureDetection = useCallback(() => {
@@ -349,16 +349,16 @@ function App() {
   const startRotationDetection = useCallback(async () => {
     setMode("rotation");
     setStatus(language === 'en'
-      ? "Please hold and slowly rotate the object for analysis..."
-      : "කරුණාකර වස්තුව අල්ලාගෙන සෙමින් කරකවන්න..."
+          ? "Please hold the object towards camera and slowly rotate  until it detect"
+          : "කරුණාකර වස්තුව කැමරාව ද‌ෙසට අල්ලාගෙන, වස්තුව හඳුනාගන්නා තුරු , සෙමින් කරකවන්න",
     );
     
     try {
       // First play the instruction
       const instructionResponse = await axios.post(`${API_BASE_URL}/speak/`, {
         text: language === 'en'
-          ? "Please hold and slowly rotate the object for analysis"
-          : "කරුණාකර වස්තුව අල්ලාගෙන සෙමින් කරකවන්න",
+          ? "Please hold the object towards camera and slowly rotate  until it detect"
+          : "කරුණාකර වස්තුව කැමරාව ද‌ෙසට අල්ලාගෙන, වස්තුව හඳුනාගන්නා තුරු , සෙමින් කරකවන්න",
         language: language
       });
 
@@ -481,8 +481,8 @@ function App() {
       
       // Play welcome message in selected language
       const welcomeText = selectedLanguage === 'en' 
-        ? "Welcome to the object detection learning platform. Press F to start object detection"
-        : "ත්‍රිමාණ වස්තු හඳුනාගැනීමේ මෘදුකාංගයට සාදරයෙන් පිළිගනිමු. වස්තු හඳුනා ගැනීම ආරම්භ කිරීමට F යතුර ඔබන්න";
+     ? "Welcome to the geomatric object detection learning platform.This system helps you recognize and interact with 3D shapes using AI.Once an object is detected, you’ll hear its name and description, along with instructions to explore its features. Press F to start object detection"
+     : "ඝනවස්තු හඳුනාගැනීමේ මෘදුකාංගයට ඔබව සාදරයෙන් පිළිගනිමු.මෙම පද්ධතිය කෘතිම බුද්ධිය භාවිතයෙන් ඔබට ඝනවස්තු හඳුනාගැනීමට සහ ඒවා සමඟ අන්තර්ක්‍රියා කිරීමට උපකාරී වේ. ඝනවස්තුක් හඳුනාගත් පසු එහි නම සහ විස්තරය ඔබට ශබ්දය මගින් ඇසෙයි. එයට අමතරව, එහි ක‌ොටස් හඳුනාගැනීම සඳහා උපදෙස්ද ලබාදෙනු ඇත. වස්තු හඳුනා ගැනීම ආරම්භ කිරීමට F යතුර ඔබන්න";
       
       const response = await axios.post(`${API_BASE_URL}/speak/`, {
         text: welcomeText,
